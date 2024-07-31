@@ -16,11 +16,13 @@ class DataProcessor : public WfmProcessor {
 
 public:
 
-    DataProcessor(std::vector<RawDataHandler::FileData>& dataFiles, std::pair<int,int> gate);
+    DataProcessor(std::vector<RawDataHandler::FileData>& dataFiles);
     ~DataProcessor();
     bool process(std::vector<RawDataHandler::FileData>& dataFiles);
     void setOutPath(std::string outPath);
     void setSignalTypes(std::map<string, DigiData::SignalType> sigTypes);
+    void setCommonGates(std::pair<unsigned int, unsigned int> gate);
+    void setGates(std::map<string, std::pair<unsigned int, unsigned int>> gates);
     void setFitFlags(std::map<string, bool> fitFlags);
     const std::map<string, DigiData> getOutDigi() {return outDigi;}
     // Add other processing methods...
@@ -43,6 +45,7 @@ bool DataProcessor::process(std::vector<RawDataHandler::FileData>& dataFiles) {
     auto& wfm = file.data;
 
     auto ThisDigi = &outDigi.at(name);
+    if (isDebug) printf("Working on %s\n", name.c_str());
     ProcessWfm(wfm, ThisDigi);
     if(ThisDigi->fitflag && ThisDigi->container.GetFitR2() < 3)
       flag = true;
@@ -66,20 +69,31 @@ void DataProcessor::setSignalTypes(std::map<string, DigiData::SignalType> sigTyp
   }
 }
 
-void DataProcessor::setFitFlags(std::map<string, bool> fitFlags) {
+void DataProcessor::setCommonGates(std::pair<unsigned int, unsigned int> gate) {
+  for(auto &it : outDigi)
+    it.second.gates = gate;
+}
+
+void DataProcessor::setGates(std::map<string, std::pair<unsigned int, unsigned int>> gates) {
   for(auto &it : outDigi) {
-    if (fitFlags.find(it.first) != fitFlags.end())
-      it.second.fitflag = fitFlags[it.first];    
+    if (gates.find(it.first) != gates.end())
+      it.second.gates = gates[it.first];    
   }
 }
 
-DataProcessor::DataProcessor(std::vector<RawDataHandler::FileData>& dataFiles, std::pair<int,int> gate) : WfmProcessor() {
+void DataProcessor::setFitFlags(std::map<string, bool> fitFlags) {
+  for(auto &it : outDigi) {
+    if (fitFlags.find(it.first) != fitFlags.end()) {
+      it.second.fitflag = fitFlags[it.first];    
+      if (isDebug) printf("Set %s to fit flag %d\n", it.first.c_str(), it.second.fitflag);
+    }
+  }
+}
+
+DataProcessor::DataProcessor(std::vector<RawDataHandler::FileData>& dataFiles) : WfmProcessor() {
   DigiData empty;
   for(auto &file : dataFiles)
     outDigi[file.name] = empty;
-
-  fdigiPars.gateBegin = gate.first;
-  fdigiPars.gateEnd = gate.second;
 }
 
 DataProcessor::~DataProcessor() {

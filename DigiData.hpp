@@ -7,7 +7,7 @@
 
 class DigiData {
 public:
-    enum class SignalType { AnalogPositive, AnalogNegative, LogicPositive, LogicNegative, Blank, Trigger };
+    enum class SignalType { AnalogPositive, AnalogNegative, LogicPositive, LogicNegative, Blank };
 
     DigiData();
     DigiData(const DigiData& other); // Copy constructor
@@ -17,6 +17,7 @@ public:
     virtual ~DigiData();
 
     SignalType type;
+    std::pair<float,float> gates;
     BmnDigiContainerTemplate container;
     bool fitflag;
     std::vector<std::pair<float,float>> tau;
@@ -24,11 +25,15 @@ public:
 
 DigiData::DigiData() {
     // Constructor implementation
+    type = SignalType::AnalogPositive;
+    gates = std::make_pair(0.0,0.0);
+    fitflag = false; 
 }
 
 DigiData::DigiData(const DigiData& other) {
     // Copy constructor implementation
     type = other.type;
+    gates = other.gates;
     container = other.container;
     fitflag = other.fitflag;
     tau = other.tau;
@@ -37,6 +42,7 @@ DigiData::DigiData(const DigiData& other) {
 DigiData::DigiData(DigiData&& other) noexcept {
     // Move constructor implementation
     type = std::move(other.type);
+    gates = std::move(other.gates);
     container = std::move(other.container);
     tau = std::move(other.tau);
 }
@@ -45,6 +51,7 @@ DigiData& DigiData::operator=(const DigiData& other) {
     // Copy assignment operator implementation
     if (this != &other) {
         type = other.type;
+        gates = other.gates;
         container = other.container;
         fitflag = other.fitflag;
         tau = other.tau;
@@ -56,6 +63,7 @@ DigiData& DigiData::operator=(DigiData&& other) noexcept {
     // Move assignment operator implementation
     if (this != &other) {
         type = std::move(other.type);
+        gates = std::move(other.gates);
         container = std::move(other.container);
         fitflag = std::move(other.fitflag);
         tau = std::move(other.tau);

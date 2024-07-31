@@ -45,7 +45,7 @@ int wavedump(const std::string& folderPath = "", const std::string& outPath = "r
   const int visual_min_adc = -5000;
   const int visual_max_adc = 5000;
   const int gate_beg = 150;
-  const int gate_end = 900;
+  const int gate_end = 600;
 
   RawDataHandler rawDataHandler;
   DataVisualizer dataVisualizer(wfm_length, std::make_pair(visual_min_adc, visual_max_adc));
@@ -58,7 +58,8 @@ int wavedump(const std::string& folderPath = "", const std::string& outPath = "r
   //long nEvents = floor(size / wfm_length);
   //nEventsToProcess = (nEventsToProcess <= 0) ? nEvents : std::min(nEvents, nEventsToProcess);
 
-  DataProcessor dataProcessor(rawDataHandler.dataFiles, std::make_pair(gate_beg, gate_end));
+  DataProcessor dataProcessor(rawDataHandler.dataFiles);
+  dataProcessor.setCommonGates(std::make_pair(gate_beg, gate_end));
   dataProcessor.setOutPath(outPath);
 
   std::map<std::string, SignalType> sigTypes;
@@ -78,7 +79,7 @@ int wavedump(const std::string& folderPath = "", const std::string& outPath = "r
   fitFlags["wave_1"] = true;
   fitFlags["wave_4"] = true;
   fitFlags["wave_6"] = true;
-  //dataProcessor.setFitFlags(fitFlags);
+  dataProcessor.setFitFlags(fitFlags);
 
   int status = 0;
   for (int ev = 0; ev < nEventsToProcess; ev++) {
@@ -87,11 +88,10 @@ int wavedump(const std::string& folderPath = "", const std::string& outPath = "r
       cout << "Event: " << ev << endl;
     //status = rawDataHandler.skip(header_length);
     status = rawDataHandler.readEvent(wfm_length);
+    if (visualize) dataVisualizer.fillGraphs(rawDataHandler.dataFiles);
     bool good_fit = dataProcessor.process(rawDataHandler.dataFiles);
     if (visualize) {
-      dataVisualizer.fillGraphs(rawDataHandler.dataFiles);
-      if (good_fit)
-        dataVisualizer.fillFit(dataProcessor.getOutDigi(), fitFlags);
+      if (good_fit) dataVisualizer.fillFit(dataProcessor.getOutDigi(), fitFlags);
       status = dataVisualizer.visualize();
     }
   }

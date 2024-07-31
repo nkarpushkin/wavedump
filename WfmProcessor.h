@@ -19,8 +19,6 @@ public:
 
     struct digiPars {
         bool isWriteWfm;
-        unsigned int gateBegin;
-        unsigned int gateEnd;
         float threshold;
     } fdigiPars;
 

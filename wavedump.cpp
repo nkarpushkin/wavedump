@@ -88,9 +88,9 @@ int wavedump(const std::string& folderPath = "", const std::string& outPath = "r
       cout << "Event: " << ev << endl;
     //status = rawDataHandler.skip(header_length);
     status = rawDataHandler.readEvent(wfm_length);
-    if (visualize) dataVisualizer.fillGraphs(rawDataHandler.dataFiles);
+    if (visualize && dataVisualizer.getStatus()) dataVisualizer.fillGraphs(rawDataHandler.dataFiles);
     bool good_fit = dataProcessor.process(rawDataHandler.dataFiles);
-    if (visualize) {
+    if (visualize && dataVisualizer.getStatus()) {
       if (good_fit) dataVisualizer.fillFit(dataProcessor.getOutDigi(), fitFlags);
       status = dataVisualizer.visualize();
     }

@@ -52,7 +52,7 @@ void WfmProcessor::ProcessWfm(std::vector<float> &wfm, DigiData *digi)
   case SignalType::AnalogPositive:
   {
     //MAX and Integral calculation including borders
-    if (isDebug) std::cout << "WfmProcessor : Filling " << digi->container.GetClassName() << ". MAX & INT search logic\n";
+    if (isDebug) std::cout << "WfmProcessor : Filling " << digi->container.GetClassName() << ". MAX & INT search\n";
     digi->container.fIntegral = std::accumulate(wfm.begin() + gateBegin, wfm.begin() + gateEnd + 1, 0.0);
     auto const max_iter = std::max_element(wfm.begin() + gateBegin, wfm.begin() + gateEnd + 1);
     digi->container.fAmpl = *max_iter;
@@ -93,7 +93,7 @@ void WfmProcessor::ProcessWfm(std::vector<float> &wfm, DigiData *digi)
       PsdSignalFitting::PronyFitter Pfitter(model_order, exponents, gateBegin, gateEnd);
       //Pfitter.SetDebugMode(1);
       Pfitter.SetWaveform(wfm, 0.0);
-      int best_signal_begin = Pfitter.ChooseBestSignalBeginHarmonics(digi->container.fTimeMax-50, digi->container.fTimeMax-10);
+      int best_signal_begin = Pfitter.ChooseBestSignalBeginHarmonics(digi->container.fTimeCFD-5, digi->container.fTimeCFD);
 
       Pfitter.SetSignalBegin(best_signal_begin);
       Pfitter.CalculateFitHarmonics();

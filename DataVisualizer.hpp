@@ -23,6 +23,7 @@ public:
     void fillGraphs(std::vector<RawDataHandler::FileData>& dataFiles);
     void fillFit(const std::map<string, DigiData> outDigi, std::map<string, bool> fitFlags);
     int visualize();
+    bool getStatus();
 
 };
 
@@ -117,6 +118,9 @@ int DataVisualizer::visualize() {
   return 0;
 }
 
+bool DataVisualizer::getStatus() {
+  return onStatus;
+}
 
 DataVisualizer::DataVisualizer(int samples, std::pair<int,int> range) {
   onStatus = true;

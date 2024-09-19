@@ -57,7 +57,7 @@ bool DataProcessor::process(std::vector<RawDataHandler::FileData>& dataFiles) {
 
 void DataProcessor::setOutPath(std::string outPath) {
   outfile = new TFile(outPath.c_str(), "RECREATE");
-  outtree = new TTree("data", "data");
+  outtree = new TTree("tree", "tree");
   for(auto &it : outDigi)
     outtree->Branch(it.first.c_str(), &it.second);
 }

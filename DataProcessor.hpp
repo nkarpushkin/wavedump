@@ -23,7 +23,10 @@ public:
     void setSignalTypes(std::map<string, DigiData::SignalType> sigTypes);
     void setCommonGates(std::pair<unsigned int, unsigned int> gate);
     void setGates(std::map<string, std::pair<unsigned int, unsigned int>> gates);
+    void setCommonZLGates(std::pair<unsigned int, unsigned int> gate);
+    void setZLGates(std::map<string, std::pair<unsigned int, unsigned int>> gates);
     void setFitFlags(std::map<string, bool> fitFlags);
+    void setFitTau(std::map<std::string, std::vector<std::complex<float>>> fitTau);
     const std::map<string, DigiData> getOutDigi() {return outDigi;}
     // Add other processing methods...
 
@@ -81,6 +84,18 @@ void DataProcessor::setGates(std::map<string, std::pair<unsigned int, unsigned i
   }
 }
 
+void DataProcessor::setCommonZLGates(std::pair<unsigned int, unsigned int> gate) {
+  for(auto &it : outDigi)
+    it.second.zlgates = gate;
+}
+
+void DataProcessor::setZLGates(std::map<string, std::pair<unsigned int, unsigned int>> gates) {
+  for(auto &it : outDigi) {
+    if (gates.find(it.first) != gates.end())
+      it.second.zlgates = gates[it.first];    
+  }
+}
+
 void DataProcessor::setFitFlags(std::map<string, bool> fitFlags) {
   for(auto &it : outDigi) {
     if (fitFlags.find(it.first) != fitFlags.end()) {
@@ -89,6 +104,28 @@ void DataProcessor::setFitFlags(std::map<string, bool> fitFlags) {
     }
   }
 }
+
+void DataProcessor::setFitTau(std::map<std::string, std::vector<std::complex<float>>> fitTau) {
+  for (auto& it : outDigi) {
+    auto found = fitTau.find(it.first);
+    if (found != fitTau.end()) {
+      it.second.fitflag = true;
+      const auto& tauvec = found->second;
+      it.second.tau.clear();
+      it.second.tau.reserve(tauvec.size());
+      for (const auto& c : tauvec) {
+        it.second.tau.emplace_back(c.real(), c.imag());
+      }
+      if (isDebug) {
+        printf("Set %s fit taus:", it.first.c_str());
+        for (const auto& tau : it.second.tau)
+          printf(" {%.0f,%.0f}", tau.first, tau.second);
+        printf("\n");
+      }
+    }
+  }
+}
+
 
 DataProcessor::DataProcessor(std::vector<RawDataHandler::FileData>& dataFiles) : WfmProcessor() {
   DigiData empty;

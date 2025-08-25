@@ -7,7 +7,10 @@ void WfmProcessor::ProcessWfm(std::vector<float> &wfm, DigiData *digi)
   if(digi->type == SignalType::Blank) return;
 
   if (fdigiPars.isWriteWfm) digi->container.fWfm = wfm;
+  assert(digi->zlgates.second > 0);
   assert(digi->gates.first > 0 && digi->gates.second > 0);
+  unsigned int zlBegin = digi->zlgates.first;
+  unsigned int zlEnd = digi->zlgates.second;
   unsigned int gateBegin = digi->gates.first;
   unsigned int gateEnd = digi->gates.second;
   
@@ -24,7 +27,7 @@ void WfmProcessor::ProcessWfm(std::vector<float> &wfm, DigiData *digi)
 
   //Zero level calculation
   if (isDebug) std::cout << "WfmProcessor : Filling " << digi->container.GetClassName() << ". ZL calc\n";
-  float ZL = std::accumulate(wfm.begin(), wfm.begin() + gateBegin, 0.0) / gateBegin;
+  float ZL = std::accumulate(wfm.begin() + zlBegin, wfm.begin() + zlEnd + 1, 0.0) / (zlEnd - zlBegin + 1);
   std::transform(wfm.begin(), wfm.end(), wfm.begin(), [ZL](float value) { return value - ZL; });
   digi->container.fZL = ZL;
 
@@ -82,11 +85,11 @@ void WfmProcessor::ProcessWfm(std::vector<float> &wfm, DigiData *digi)
     }
 
     //Prony fitting procedure
-    if (type_copy == SignalType::AnalogPositive && digi->fitflag) {
+    if (type_copy == SignalType::AnalogPositive && digi->fitflag && digi->tau.empty()) {
       if (isDebug) std::cout << "WfmProcessor : Filling " << digi->container.GetClassName() << ". Fitting\n";
 
       //##################################
-      const int model_order = 5;
+      const int model_order = 7;
       const int exponents = 3;
       //##################################
 
@@ -106,6 +109,37 @@ void WfmProcessor::ProcessWfm(std::vector<float> &wfm, DigiData *digi)
       }
       digi->tau = result;
 
+      digi->container.fFitIntegral = Pfitter.GetIntegral(gateBegin, gateEnd);
+      digi->container.fFitAmpl = Pfitter.GetMaxAmplitude() - Pfitter.GetZeroLevel();
+      float fit_R2 = Pfitter.GetRSquare(gateBegin, gateEnd);
+      digi->container.fFitR2 = (fit_R2 > 2.0) ? 2.0 : fit_R2;
+      digi->container.fFitZL = Pfitter.GetZeroLevel();
+      digi->container.fFitTimeMax = Pfitter.GetSignalMaxTime();
+      if (false) printf("fit integral %.0f integral %.0f R2 %.3f\n", digi->container.fFitIntegral, digi->container.fIntegral, digi->container.fFitR2);
+
+      auto fit = Pfitter.GetFitWfm();
+      if (digi->type == SignalType::AnalogPositive && fdigiPars.isWriteWfm) {
+        std::transform(fit.begin(), fit.end(), fit.begin(), [ZL](float value) { return value + ZL; });
+        digi->container.fFitWfm = fit;
+      }
+      if (digi->type == SignalType::AnalogNegative && fdigiPars.isWriteWfm) {
+        std::transform(fit.begin(), fit.end(), fit.begin(),
+          std::bind(std::multiplies<float>(), -1.0, std::placeholders::_1));
+        std::transform(fit.begin(), fit.end(), fit.begin(), [ZL](float value) { return value + ZL; });
+        digi->container.fFitWfm = fit;
+      }
+    }
+    else if (type_copy == SignalType::AnalogPositive && digi->fitflag && !digi->tau.empty()) {
+      PsdSignalFitting::PronyFitter Pfitter(digi->tau.size(), digi->tau.size(), gateBegin, gateEnd);
+      //Pfitter.SetDebugMode(1);
+      Pfitter.SetWaveform(wfm, 0.0);
+      std::vector<std::complex<float>> harmonics;
+      for (auto &tau : digi->tau) harmonics.push_back({static_cast<float>(exp(-1./tau.first)), 0.0});
+      Pfitter.SetExternalHarmonics(harmonics);
+      int best_signal_begin = Pfitter.ChooseBestSignalBegin(digi->container.fTimeCFD-5, digi->container.fTimeCFD);
+
+      Pfitter.SetSignalBegin(best_signal_begin);
+      Pfitter.CalculateFitAmplitudes();
       digi->container.fFitIntegral = Pfitter.GetIntegral(gateBegin, gateEnd);
       digi->container.fFitAmpl = Pfitter.GetMaxAmplitude() - Pfitter.GetZeroLevel();
       float fit_R2 = Pfitter.GetRSquare(gateBegin, gateEnd);

@@ -21,7 +21,7 @@ public:
 
     bool onStatus;
     void fillGraphs(std::vector<RawDataHandler::FileData>& dataFiles);
-    void fillFit(const std::map<string, DigiData> outDigi, std::map<string, bool> fitFlags);
+    void fillFit(const std::map<string, DigiData> outDigi);
     int visualize();
     bool getStatus();
 
@@ -64,9 +64,9 @@ void DataVisualizer::fillGraphs(std::vector<RawDataHandler::FileData>& dataFiles
   return;
 }
 
-void DataVisualizer::fillFit(const std::map<string, DigiData> outDigi, std::map<string, bool> fitFlags) {
-  for(auto &it : fitFlags) {
-    if(it.second) {
+void DataVisualizer::fillFit(const std::map<string, DigiData> outDigi) {
+  for(auto &it : outDigi) {
+    if(!it.second.container.fFitWfm.empty()) {
       auto& wfm = outDigi.at(it.first).container.fFitWfm;
       TH1F* gr = new TH1F(Form("fit_%s", it.first.c_str()), Form("fit_%s; Sample ; Amplitude", it.first.c_str()), wfm.size(), 0, wfm.size());
       gr->SetLineColor(kRed);
